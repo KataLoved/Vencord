@@ -114,7 +114,7 @@ async function ensureBinary() {
 
 
 
-const installerBin = await ensureBinary();
+const installerBin = await ensureBinary();+
 
 console.log("Now running Installer...");
 
