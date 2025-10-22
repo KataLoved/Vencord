@@ -50,7 +50,7 @@ export default definePlugin({
 	flux: {
 		MESSAGE_CREATE({ channelId, message }: { channelId: string; message: Message; }) {
 			if (channelId !== root.TARGET_CHANNEL_ID) return;
-			if (message.type !== 0 || message.embeds?.length === 0) return; // @ts-ignore
+			if (message.type !== 0) return; // @ts-ignore
 			this.checkMessage(message);
 		},
 		CHANNEL_SELECT({ channelId }: { channelId: string; }) {
