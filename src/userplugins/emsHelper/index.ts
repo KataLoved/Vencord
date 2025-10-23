@@ -162,7 +162,7 @@ export default definePlugin({
 		if (cachedMessages?._array) {
 			const cachedMessage = cachedMessages._array.find((msg: Message) => msg.id === messageId);
 			if (cachedMessage) {
-				return this.hasCheckmarkReaction(cachedMessage);
+				return this.hasCheckMarkReaction(cachedMessage);
 			}
 		}
 
@@ -177,7 +177,7 @@ export default definePlugin({
 			if (!targetMessage) return false;
 
 			if (!targetMessage.content.includes(member.userId)) return false;
-			return this.hasCheckmarkReaction(targetMessage);
+			return this.hasCheckMarkReaction(targetMessage);
 		} catch (error) {
 			console.error(`❌ [${this.name}]: Ошибка при проверке ссылки на отчёт:`, error);
 			return null;
@@ -190,16 +190,16 @@ export default definePlugin({
 	},
 
 	hasDecisionReaction(message: any): boolean {
-		return this.hasCheckmarkReaction(message) || this.hasCancelReaction(message);
+		return this.hasCheckMarkReaction(message) || this.hasCancelReaction(message);
 	},
 
-	hasCheckmarkReaction(message: any): boolean {
+	hasCheckMarkReaction(message: any): boolean {
 		if (!message.reactions || message.reactions.length === 0) return false;
 
-		const checkmarkEmojis = ["✅", "☑️", "✓", "white_check_mark"];
+		const checkMarkEmojis = ["✅", "☑️", "✓", "white_check_mark"];
 		return message.reactions.some((reaction: any) => {
 			const emojiName = reaction.emoji.name;
-			return checkmarkEmojis.some(check => emojiName === check || emojiName?.includes("check"));
+			return checkMarkEmojis.some(check => emojiName === check || emojiName?.includes("check"));
 		});
 	},
 
