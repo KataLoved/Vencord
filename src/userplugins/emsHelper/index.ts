@@ -17,10 +17,6 @@ const root = {
 	WAIT_TIME: 1500
 };
 
-const cache = {
-	checked: new Map<string, Embed>()
-};
-
 const Regulars = {
 	identify: /(?<name>\w+\s\w+)(\s|\s?\|\s?)(?<id>\d{1,6})/i,
 	role: /[\wА-Яа-яЁё\s-]+\s\[(?<currentLevel>\d+)\]\s→\s[\wА-Яа-яЁё\s-]+\s\[(?<newLevel>\d+)\]/i
@@ -51,7 +47,7 @@ export default definePlugin({
 		MESSAGE_CREATE({ channelId, message }: { channelId: string; message: Message; }) {
 			if (channelId !== root.TARGET_CHANNEL_ID) return;
 			if (message.type !== 0) return; // @ts-ignore
-			this.checkMessage(message);
+			setTimeout(() => this.checkChannelMessages(true), 500);
 		},
 		CHANNEL_SELECT({ channelId }: { channelId: string; }) {
 			if (channelId !== root.TARGET_CHANNEL_ID) return; // @ts-ignore
@@ -59,7 +55,7 @@ export default definePlugin({
 		}
 	},
 
-	async checkChannelMessages(): Promise<void> {
+	async checkChannelMessages(onlyNewMessage: boolean = false): Promise<void> {
 		const channel = ChannelStore.getChannel(root.TARGET_CHANNEL_ID);
 		if (!channel || channel.guild_id !== root.TARGET_GUILD_ID) return;
 
@@ -68,7 +64,7 @@ export default definePlugin({
 
 		const filter = (msg: Message) => msg.type === 0 && msg.embeds.length === 1;
 		const messageArray = messages._array.toReversed().filter(filter) || [];
-		const lastFive = messageArray.slice(0, settings.store.checkCount).toReversed() as Message[];
+		const lastFive = messageArray.slice(0, onlyNewMessage ? 1 : settings.store.checkCount).toReversed() as Message[];
 
 		for (const msg of lastFive) {
 			await this.checkMessage(msg);
@@ -86,7 +82,6 @@ export default definePlugin({
 
 		const embed: Embed = message.embeds[0];
 		if (!embed.fields || embed.fields.length === 0) return;
-		if (cache.checked.has(message.id)) return;
 
 		const identifyField = embed.fields.find(f => f.rawName.includes("Имя Фамилия | Static ID"));
 		const rankField = embed.fields.find(f => f.rawName.includes("На какой ранг повышаетесь"));
