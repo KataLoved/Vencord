@@ -190,6 +190,9 @@ export default definePlugin({
 		if (cachedMessages?._array) {
 			const cachedMessage = cachedMessages._array.find((msg: Message) => msg.id === messageId);
 			if (cachedMessage) {
+				if (!cachedMessage.content.includes(member.userId)) return false;
+				if (cachedMessage.embeds.length === 0) return false;
+
 				return this.hasCheckMarkReaction(cachedMessage);
 			}
 		}
@@ -205,6 +208,8 @@ export default definePlugin({
 			if (!targetMessage) return false;
 
 			if (!targetMessage.content.includes(member.userId)) return false;
+			if (targetMessage.embeds.length === 0) return false;
+
 			return this.hasCheckMarkReaction(targetMessage);
 		} catch (error) {
 			console.error(`❌ [${this.name}]: Ошибка при проверке ссылки на отчёт:`, error);
