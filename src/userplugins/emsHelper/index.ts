@@ -18,7 +18,7 @@ const root = {
 };
 
 const Regulars = {
-	identify: /(?<name>\w+\s\w+)(\s|\s?\|\s?)(?<id>\d{1,6})/i,
+	identify: /(?<name>\w+\s\w+)((?:\s|\s?[\|il]\s)?)(?<id>\d{1,6})/i,
 	role: /[\wА-Яа-яЁё\s-]+\s\[(?<currentLevel>\d+)\]\s→\s[\wА-Яа-яЁё\s-]+\s\[(?<newLevel>\d+)\]/i
 };
 
@@ -34,6 +34,15 @@ const settings = definePluginSettings({
 		type: OptionType.BOOLEAN,
 		default: false,
 		restartNeeded: false
+	},
+	beta: {
+		description: "Включить экспериментальные функции",
+		type: OptionType.BOOLEAN,
+		default: false,
+		restartNeeded: false,
+		onChange(value: boolean) {
+			console.log(`[EmsHelper]: Experimental features are ${value ? "enabled" : "disabled"}.`);
+		}
 	}
 });
 
@@ -99,15 +108,27 @@ export default definePlugin({
 			const matchIdentify = identifyField.rawValue.match(Regulars.identify);
 			const matchRank = rankField.rawValue.match(Regulars.role);
 
-			if (identifyField && matchIdentify) {
+			if (identifyField) {
 				const displayName = (member?.nick || UserStore.getUser(member.userId)?.username).toLowerCase();
-				const nameTrimmed = matchIdentify.groups!.name.trim().toLowerCase();
-				const idTrimmed = matchIdentify.groups!.id.trim();
+				let nameEmoji: string;
 
-				const isValid = displayName.includes(nameTrimmed) && displayName.includes(idTrimmed);
-				const nameEmoji = isValid ? "✅" : "❌";
+				if (!matchIdentify) {
+					nameEmoji = "❌";
+					console.log(`╰┈➤ [${this.name}][${message.id}]: Identify Status: IsNotMatched - "${identifyField.rawValue}" (${nameEmoji})`);
+				} else {
+					const nameTrimmed = matchIdentify.groups!.name.trim().toLowerCase();
+					const idTrimmed = matchIdentify.groups!.id.trim();
 
-				console.log(`╰┈➤ [${this.name}][${message.id}]: Identify Status: ${isValid} (${nameEmoji})`);
+					const isValid = displayName.includes(nameTrimmed) && displayName.includes(idTrimmed);
+					nameEmoji = isValid ? "✅" : "❌";
+
+					if (nameEmoji === "❌") {
+						console.log(`╰┈➤ [${this.name}][DEBUG][${message.id}]:\n - Display Name: ${displayName}\n - Expected Name: ${nameTrimmed}\n - Expected ID: ${idTrimmed}`);
+					}
+
+					console.log(`╰┈➤ [${this.name}][${message.id}]: Identify Status: ${isValid} (${nameEmoji})`);
+				}
+
 				if (!identifyField.rawName.startsWith("✅") && !identifyField.rawName.startsWith("❌")) {
 					identifyField.rawName = `${nameEmoji} ${identifyField.rawName}`;
 					isUpdated = true;
@@ -115,12 +136,17 @@ export default definePlugin({
 			}
 
 			if (rankField && matchRank) {
-				const currentRoleLevel = (isAlreadyChecked ? matchRank.groups!.newLevel : matchRank.groups!.currentLevel).trim();
+				const hasCheckMarkReaction = this.hasCheckMarkReaction(message);
+				const currentRoleLevel = (hasCheckMarkReaction ? matchRank.groups!.newLevel : matchRank.groups!.currentLevel).trim();
 				const currentRolePart = `${currentRoleLevel} |`;
 				const roles = member.roles.map(rId => GuildRoleStore.getRole(root.TARGET_GUILD_ID, rId));
 
 				const hasRole = roles.some(role => role.name.toLowerCase().startsWith(currentRolePart));
 				const rankEmoji = hasRole ? "✅" : "⚠️";
+
+				if (rankEmoji === "⚠️") {
+					console.log(`╰┈➤ [${this.name}][DEBUG][${message.id}]:\n - Member Roles: [${JSON.stringify(roles.map(r => r.name))}]\n - Expected Role Start: ${currentRolePart}`);
+				}
 
 				console.log(`╰┈➤ [${this.name}][${message.id}]: Role Status: ${hasRole} (${rankEmoji})`);
 				if (!rankField.rawName.startsWith("✅") && !rankField.rawName.startsWith("⚠️")) {
@@ -131,6 +157,7 @@ export default definePlugin({
 
 			const isReportApproved = await this.checkReportLink(member, reportField);
 			const reportEmoji = isReportApproved === null ? "⚠️" : (isReportApproved ? "✅" : "❌");
+
 			console.log(`╰┈➤ [${this.name}][${message.id}]: Report Status: ${reportEmoji} (${isReportApproved})`);
 			if (!reportField.rawName.startsWith("✅") && !reportField.rawName.startsWith("❌") && !reportField.rawName.startsWith("⚠️")) {
 				reportField.rawName = `${reportEmoji} ${reportField.rawName}`;
@@ -143,8 +170,9 @@ export default definePlugin({
 			}
 		}
 
-		if (isUpdated)
-			updateMessage(root.TARGET_CHANNEL_ID, message.id, { embeds: [embed] });
+		if (!isUpdated) return;
+
+		updateMessage(root.TARGET_CHANNEL_ID, message.id, { embeds: [embed] });
 	},
 
 	async checkReportLink(member: GuildMember, field: any): Promise<boolean | null> {
