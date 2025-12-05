@@ -14,12 +14,12 @@ import { GuildRoleStore } from "@webpack/common";
 const root = {
 	TARGET_CHANNEL_ID: "1280952569946177629",
 	TARGET_GUILD_ID: "1274111070415487097",
-	WAIT_TIME: 1500
+	WAIT_TIME: 1000
 };
 
 const Regulars = {
 	identify: /(?<name>\w+\s\w+)((?:\s|\s?[\|il]\s)?)(?<id>\d{1,6})/i,
-	role: /[\wА-Яа-яЁё\s-]+\s\[(?<currentLevel>\d+)\]\s→\s[\wА-Яа-яЁё\s-]+\s\[(?<newLevel>\d+)\]/i
+	role: /(?<fromRank><@&\d+>)\s→\s(?<toRank><@&\d+>)/
 };
 
 const settings = definePluginSettings({
@@ -92,7 +92,7 @@ export default definePlugin({
 		const embed: Embed = message.embeds[0];
 		if (!embed.fields || embed.fields.length === 0) return;
 
-		const identifyField = embed.fields.find(f => f.rawName.includes("Имя Фамилия | Static ID"));
+		const identifyField = embed.fields.find(f => f.rawName.includes("Имя Фамилия | Статик"));
 		const rankField = embed.fields.find(f => f.rawName.includes("На какой ранг повышаетесь"));
 		const reportField = embed.fields.find(f => f.rawName.includes("Отчёт на повышение"));
 		const senderField = embed.fields.find(f => f.rawName.includes("Отправил(а)"));
@@ -106,7 +106,7 @@ export default definePlugin({
 
 		if (member) {
 			const matchIdentify = identifyField.rawValue.match(Regulars.identify);
-			const matchRank = rankField.rawValue.match(Regulars.role);
+			const matchRankRoles = rankField.rawValue.match(Regulars.role);
 
 			if (identifyField) {
 				const displayName = (member?.nick || UserStore.getUser(member.userId)?.username).toLowerCase();
@@ -135,17 +135,16 @@ export default definePlugin({
 				}
 			}
 
-			if (rankField && matchRank) {
+			if (rankField && matchRankRoles) {
 				const hasCheckMarkReaction = this.hasCheckMarkReaction(message);
-				const currentRoleLevel = (hasCheckMarkReaction ? matchRank.groups!.newLevel : matchRank.groups!.currentLevel).trim();
-				const currentRolePart = `${currentRoleLevel} |`;
+				const currentRankRole = (hasCheckMarkReaction ? matchRankRoles.groups!.toRank : matchRankRoles.groups!.fromRank).trim();
 				const roles = member.roles.map(rId => GuildRoleStore.getRole(root.TARGET_GUILD_ID, rId));
 
-				const hasRole = roles.some(role => role.name.toLowerCase().startsWith(currentRolePart));
+				const hasRole = roles.some(role => role.id === currentRankRole);
 				const rankEmoji = hasRole ? "✅" : "⚠️";
 
 				if (rankEmoji === "⚠️") {
-					console.log(`╰┈➤ [${this.name}][DEBUG][${message.id}]:\n - Member Roles: [${JSON.stringify(roles.map(r => r.name))}]\n - Expected Role Start: ${currentRolePart}`);
+					console.log(`╰┈➤ [${this.name}][DEBUG][${message.id}]:\n - Member Roles: [${JSON.stringify(roles.map(r => `${r.name} | ${r.id}`))}]\n - Expected Role Start: ${currentRankRole}`);
 				}
 
 				console.log(`╰┈➤ [${this.name}][${message.id}]: Role Status: ${hasRole} (${rankEmoji})`);
@@ -185,7 +184,7 @@ export default definePlugin({
 			return hasAnyLink ? null : false;
 		}
 
-		const [, , , , channelId, messageId] = match;
+		const [,,,, channelId, messageId] = match;
 		const cachedMessages = MessageStore.getMessages(channelId);
 		if (cachedMessages?._array) {
 			const cachedMessage = cachedMessages._array.find((msg: Message) => msg.id === messageId);
