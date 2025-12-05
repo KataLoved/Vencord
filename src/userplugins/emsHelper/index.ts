@@ -19,7 +19,7 @@ const root = {
 
 const Regulars = {
 	identify: /(?<name>\w+\s\w+)((?:\s|\s?[\|il]\s)?)(?<id>\d{1,6})/i,
-	role: /(?<fromRank><@&\d+>)\s→\s(?<toRank><@&\d+>)/
+	role: /<@&(?<fromRank>\d+)>\s→\s<@&(?<toRank>\d+)>/
 };
 
 const settings = definePluginSettings({
@@ -92,11 +92,15 @@ export default definePlugin({
 		const embed: Embed = message.embeds[0];
 		if (!embed.fields || embed.fields.length === 0) return;
 
-		const identifyField = embed.fields.find(f => f.rawName.includes("Имя Фамилия | Статик"));
-		const rankField = embed.fields.find(f => f.rawName.includes("На какой ранг повышаетесь"));
-		const reportField = embed.fields.find(f => f.rawName.includes("Отчёт на повышение"));
-		const senderField = embed.fields.find(f => f.rawName.includes("Отправил(а)"));
-		if (!identifyField || !rankField || !reportField || !senderField) return;
+		const [identifyField, rankField, reportField, senderField] = embed.fields;
+		if (!identifyField || !rankField || !reportField || !senderField) {
+			console.log(`╰┈➤ [${this.name}][DEBUG][${message.id}]: Field not found.`);
+			console.log(` - identifyField: ${!!identifyField}`);
+			console.log(` - rankField: ${!!rankField}`);
+			console.log(` - reportField: ${!!reportField}`);
+			console.log(` - senderField: ${!!senderField}`);
+			return;
+		}
 
 		const userIdMatch = senderField.rawValue?.match(/<@!?(\d+)>/);
 		if (!userIdMatch) return;
@@ -170,7 +174,6 @@ export default definePlugin({
 		}
 
 		if (!isUpdated) return;
-
 		updateMessage(root.TARGET_CHANNEL_ID, message.id, { embeds: [embed] });
 	},
 
@@ -184,7 +187,7 @@ export default definePlugin({
 			return hasAnyLink ? null : false;
 		}
 
-		const [,,,, channelId, messageId] = match;
+		const [, , , , channelId, messageId] = match;
 		const cachedMessages = MessageStore.getMessages(channelId);
 		if (cachedMessages?._array) {
 			const cachedMessage = cachedMessages._array.find((msg: Message) => msg.id === messageId);
