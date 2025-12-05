@@ -139,22 +139,28 @@ export default definePlugin({
 				}
 			}
 
-			if (rankField && matchRankRoles) {
-				const hasCheckMarkReaction = this.hasCheckMarkReaction(message);
-				const currentRankRole = (hasCheckMarkReaction ? matchRankRoles.groups!.toRank : matchRankRoles.groups!.fromRank).trim();
-				const roles = member.roles.map(rId => GuildRoleStore.getRole(root.TARGET_GUILD_ID, rId));
-
-				const hasRole = roles.some(role => role.id === currentRankRole);
-				const rankEmoji = hasRole ? "✅" : "⚠️";
-
-				if (rankEmoji === "⚠️") {
-					console.log(`╰┈➤ [${this.name}][DEBUG][${message.id}]:\n - Member Roles: [${JSON.stringify(roles.map(r => `${r.name} | ${r.id}`))}]\n - Expected Role Start: ${currentRankRole}`);
-				}
-
-				console.log(`╰┈➤ [${this.name}][${message.id}]: Role Status: ${hasRole} (${rankEmoji})`);
-				if (!rankField.rawName.startsWith("✅") && !rankField.rawName.startsWith("⚠️")) {
-					rankField.rawName = `${rankEmoji} ${rankField.rawName}`;
-					isUpdated = true;
+			if (rankField) {
+				let rankEmoji: string;
+				if (matchRankRoles) {
+					const hasCheckMarkReaction = this.hasCheckMarkReaction(message);
+					const currentRankRole = (hasCheckMarkReaction ? matchRankRoles.groups!.toRank : matchRankRoles.groups!.fromRank).trim();
+					const roles = member.roles.map(rId => GuildRoleStore.getRole(root.TARGET_GUILD_ID, rId));
+	
+					const hasRole = roles.some(role => role.id === currentRankRole);
+					rankEmoji = hasRole ? "✅" : "⚠️";
+	
+					if (rankEmoji === "⚠️") {
+						console.log(`╰┈➤ [${this.name}][DEBUG][${message.id}]:\n - Member Roles: [${JSON.stringify(roles.map(r => `${r.name} | ${r.id}`))}]\n - Expected Role Start: ${currentRankRole}`);
+					}
+	
+					console.log(`╰┈➤ [${this.name}][${message.id}]: Role Status: ${hasRole} (${rankEmoji})`);
+					if (!rankField.rawName.startsWith("✅") && !rankField.rawName.startsWith("⚠️")) {
+						rankField.rawName = `${rankEmoji} ${rankField.rawName}`;
+						isUpdated = true;
+					}
+				} else {
+					rankEmoji = "❌";
+					console.log(`╰┈➤ [${this.name}][${message.id}]: Rank Status: IsNotMatched - "${identifyField.rawValue}" (${rankEmoji})`);
 				}
 			}
 
