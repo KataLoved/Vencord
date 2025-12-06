@@ -145,14 +145,14 @@ export default definePlugin({
 					const hasCheckMarkReaction = this.hasCheckMarkReaction(message);
 					const currentRankRole = (hasCheckMarkReaction ? matchRankRoles.groups!.toRank : matchRankRoles.groups!.fromRank).trim();
 					const roles = member.roles.map(rId => GuildRoleStore.getRole(root.TARGET_GUILD_ID, rId));
-	
+
 					const hasRole = roles.some(role => role.id === currentRankRole);
 					rankEmoji = hasRole ? "✅" : "⚠️";
-	
+
 					if (rankEmoji === "⚠️") {
 						console.log(`╰┈➤ [${this.name}][DEBUG][${message.id}]:\n - Member Roles: [${JSON.stringify(roles.map(r => `${r.name} | ${r.id}`))}]\n - Expected Role Start: ${currentRankRole}`);
 					}
-	
+
 					console.log(`╰┈➤ [${this.name}][${message.id}]: Role Status: ${hasRole} (${rankEmoji})`);
 					if (!rankField.rawName.startsWith("✅") && !rankField.rawName.startsWith("⚠️")) {
 						rankField.rawName = `${rankEmoji} ${rankField.rawName}`;
@@ -160,7 +160,7 @@ export default definePlugin({
 					}
 				} else {
 					rankEmoji = "❌";
-					console.log(`╰┈➤ [${this.name}][${message.id}]: Rank Status: IsNotMatched - "${identifyField.rawValue}" (${rankEmoji})`);
+					console.log(`╰┈➤ [${this.name}][${message.id}]: Rank Status: IsNotMatched - "${rankField.rawValue}" (${rankEmoji})`);
 				}
 			}
 
@@ -237,7 +237,7 @@ export default definePlugin({
 	hasCheckMarkReaction(message: any): boolean {
 		if (!message.reactions || message.reactions.length === 0) return false;
 
-		const checkMarkEmojis = ["✅", "☑️", "✓", "white_check_mark"];
+		const checkMarkEmojis = ["✅", "☑️", "✓", "✔️", "white_check_mark"];
 		return message.reactions.some((reaction: any) => {
 			const emojiName = reaction.emoji.name;
 			return checkMarkEmojis.some(check => emojiName === check || emojiName?.includes("check"));
