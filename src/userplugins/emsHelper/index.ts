@@ -12,6 +12,7 @@ import { updateMessage } from "@api/MessageUpdater";
 import { GuildRoleStore } from "@webpack/common";
 
 const root = {
+	HR_REPORT_CHANNEL_ID: '1274111072084955179',
 	TARGET_CHANNEL_ID: "1280952569946177629",
 	TARGET_GUILD_ID: "1274111070415487097",
 	WAIT_TIME: 1000
@@ -25,7 +26,7 @@ const EmbedFieldName = {
 };
 
 const Regulars = {
-	identify: /(?<name>\w+\s\w+)((?:\s|\s?[\|il]\s)?)(?<id>\d{1,6})/i,
+	identify: /(?<name>\w+\s\w+\.?)((?:\s|\s?[\|il]\s)?)(?<id>\d{1,6})/i,
 	role: /<@&(?<fromRank>\d+)>\s→\s<@&(?<toRank>\d+)>/
 };
 
@@ -111,17 +112,19 @@ export default definePlugin({
 
 		const userIdMatch = senderField.rawValue?.match(/<@!?(\d+)>/);
 		if (!userIdMatch) return;
+		let isUpdated = false;
 
 		const member = GuildMemberStore.getMember(root.TARGET_GUILD_ID, userIdMatch[1]);
-		if (!member) {
+		if (member) {
+			senderField.rawName = EmbedFieldName.sender;
+			isUpdated = true;
+		} else {
 			if (!senderField.rawName.includes("❌")) {
-				senderField.rawName = `❌ ${EmbedFieldName.identify}`;
+				senderField.rawName = `❌ ${EmbedFieldName.sender}`;
 				updateMessage(root.TARGET_CHANNEL_ID, message.id, { embeds: [embed] });
 			}
 			return;
 		}
-
-		let isUpdated = false;
 
 		{ // Identify
 			const displayName = (member?.nick || UserStore.getUser(member.userId)?.username).toLowerCase();
@@ -132,9 +135,20 @@ export default definePlugin({
 				const nameTrimmed = matchIdentify.groups!.name.trim().toLowerCase();
 				const idTrimmed = matchIdentify.groups!.id.trim();
 
-				const isValid = displayName.includes(nameTrimmed) && displayName.includes(idTrimmed);
-				nameEmoji = isValid ? "✅" : "❌";
+				let isValid = displayName.includes(nameTrimmed);
+				if (!isValid) {
+					console.log(`⚠️ [${this.name}][DEBUG][${message.id}]: Fallback to check trimmed LastName.`);
 
+					const displayNameMatch = displayName.match(Regulars.identify);
+					if (displayNameMatch) {
+						const displayPlayerName = displayNameMatch.groups!.name.trim();
+						if (/\.$/.test(displayPlayerName)) {
+							isValid = nameTrimmed.includes(displayPlayerName.replace(/\.$/, ''));
+						}
+					}
+				}
+
+				nameEmoji = isValid ? "✅" : "❌";
 				if (nameEmoji === "❌") {
 					console.log(`╰┈➤ [${this.name}][DEBUG][${message.id}]:\n - Display Name: ${displayName}\n - Expected Name: ${nameTrimmed}\n - Expected ID: ${idTrimmed}`);
 				}
@@ -209,7 +223,9 @@ export default definePlugin({
 			const cachedMessage = cachedMessages._array.find((msg: Message) => msg.id === messageId);
 			if (cachedMessage) {
 				if (!cachedMessage.content.includes(member.userId)) return false;
-				if (cachedMessage.embeds.length === 0) return false;
+				if (cachedMessage.embeds.length === 0 && cachedMessage.channel_id !== root.HR_REPORT_CHANNEL_ID) {
+					return false;
+				}
 
 				return this.hasCheckMarkReaction(cachedMessage);
 			}
@@ -226,7 +242,9 @@ export default definePlugin({
 			if (!targetMessage) return false;
 
 			if (!targetMessage.content.includes(member.userId)) return false;
-			if (targetMessage.embeds.length === 0) return false;
+			if (targetMessage.embeds.length === 0 && targetMessage.channel_id !== root.HR_REPORT_CHANNEL_ID) {
+				return false;
+			}
 
 			return this.hasCheckMarkReaction(targetMessage);
 		} catch (error) {
