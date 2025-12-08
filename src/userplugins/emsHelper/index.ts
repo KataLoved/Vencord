@@ -17,6 +17,13 @@ const root = {
 	WAIT_TIME: 1000
 };
 
+const EmbedFieldName = {
+	identify: 'Имя Фамилия | Статик',
+	rank: 'На какой ранг повышаетесь',
+	report: 'Отчёт на повышение',
+	sender: 'Отправил(-а)'
+};
+
 const Regulars = {
 	identify: /(?<name>\w+\s\w+)((?:\s|\s?[\|il]\s)?)(?<id>\d{1,6})/i,
 	role: /<@&(?<fromRank>\d+)>\s→\s<@&(?<toRank>\d+)>/
@@ -106,75 +113,78 @@ export default definePlugin({
 		if (!userIdMatch) return;
 
 		const member = GuildMemberStore.getMember(root.TARGET_GUILD_ID, userIdMatch[1]);
+		if (!member) {
+			if (!senderField.rawName.includes("❌")) {
+				senderField.rawName = `❌ ${EmbedFieldName.identify}`;
+				updateMessage(root.TARGET_CHANNEL_ID, message.id, { embeds: [embed] });
+			}
+			return;
+		}
+
 		let isUpdated = false;
 
-		if (member) {
+		{ // Identify
+			const displayName = (member?.nick || UserStore.getUser(member.userId)?.username).toLowerCase();
 			const matchIdentify = identifyField.rawValue.match(Regulars.identify);
+			let nameEmoji: string;
+
+			if (matchIdentify) {
+				const nameTrimmed = matchIdentify.groups!.name.trim().toLowerCase();
+				const idTrimmed = matchIdentify.groups!.id.trim();
+
+				const isValid = displayName.includes(nameTrimmed) && displayName.includes(idTrimmed);
+				nameEmoji = isValid ? "✅" : "❌";
+
+				if (nameEmoji === "❌") {
+					console.log(`╰┈➤ [${this.name}][DEBUG][${message.id}]:\n - Display Name: ${displayName}\n - Expected Name: ${nameTrimmed}\n - Expected ID: ${idTrimmed}`);
+				}
+
+				console.log(`╰┈➤ [${this.name}][${message.id}]: Identify Status: ${isValid} (${nameEmoji})`);
+			} else {
+				nameEmoji = "❌";
+				console.log(`╰┈➤ [${this.name}][${message.id}]: Identify Status: IsNotMatched - "${identifyField.rawValue}" (${nameEmoji})`);
+			}
+
+			if (!identifyField.rawName.includes(nameEmoji)) {
+				identifyField.rawName = `${nameEmoji} ${EmbedFieldName.identify}`;
+				isUpdated = true;
+			}
+		}
+
+		{ // Rank
 			const matchRankRoles = rankField.rawValue.match(Regulars.role);
+			let rankEmoji: string;
 
-			if (identifyField) {
-				const displayName = (member?.nick || UserStore.getUser(member.userId)?.username).toLowerCase();
-				let nameEmoji: string;
+			if (matchRankRoles) {
+				const hasCheckMarkReaction = this.hasCheckMarkReaction(message);
+				const currentRankRole = (hasCheckMarkReaction ? matchRankRoles.groups!.toRank : matchRankRoles.groups!.fromRank).trim();
+				const roles = member.roles.map(rId => GuildRoleStore.getRole(root.TARGET_GUILD_ID, rId));
+				const hasRole = roles.some(role => role.id === currentRankRole);
+				rankEmoji = hasRole ? "✅" : "⚠️";
 
-				if (!matchIdentify) {
-					nameEmoji = "❌";
-					console.log(`╰┈➤ [${this.name}][${message.id}]: Identify Status: IsNotMatched - "${identifyField.rawValue}" (${nameEmoji})`);
-				} else {
-					const nameTrimmed = matchIdentify.groups!.name.trim().toLowerCase();
-					const idTrimmed = matchIdentify.groups!.id.trim();
-
-					const isValid = displayName.includes(nameTrimmed) && displayName.includes(idTrimmed);
-					nameEmoji = isValid ? "✅" : "❌";
-
-					if (nameEmoji === "❌") {
-						console.log(`╰┈➤ [${this.name}][DEBUG][${message.id}]:\n - Display Name: ${displayName}\n - Expected Name: ${nameTrimmed}\n - Expected ID: ${idTrimmed}`);
-					}
-
-					console.log(`╰┈➤ [${this.name}][${message.id}]: Identify Status: ${isValid} (${nameEmoji})`);
+				if (rankEmoji === "⚠️") {
+					console.log(`╰┈➤ [${this.name}][DEBUG][${message.id}]:\n - Member Roles: [${JSON.stringify(roles.map(r => `${r.name} | ${r.id}`))}]\n - Expected Role Start: ${currentRankRole}`);
 				}
 
-				if (!identifyField.rawName.startsWith("✅") && !identifyField.rawName.startsWith("❌")) {
-					identifyField.rawName = `${nameEmoji} ${identifyField.rawName}`;
-					isUpdated = true;
-				}
+				console.log(`╰┈➤ [${this.name}][${message.id}]: Role Status: ${hasRole} (${rankEmoji})`);
+			} else {
+				rankEmoji = "❌";
+				console.log(`╰┈➤ [${this.name}][${message.id}]: Rank Status: IsNotMatched - "${rankField.rawValue}" (${rankEmoji})`);
 			}
 
-			if (rankField) {
-				let rankEmoji: string;
-				if (matchRankRoles) {
-					const hasCheckMarkReaction = this.hasCheckMarkReaction(message);
-					const currentRankRole = (hasCheckMarkReaction ? matchRankRoles.groups!.toRank : matchRankRoles.groups!.fromRank).trim();
-					const roles = member.roles.map(rId => GuildRoleStore.getRole(root.TARGET_GUILD_ID, rId));
-
-					const hasRole = roles.some(role => role.id === currentRankRole);
-					rankEmoji = hasRole ? "✅" : "⚠️";
-
-					if (rankEmoji === "⚠️") {
-						console.log(`╰┈➤ [${this.name}][DEBUG][${message.id}]:\n - Member Roles: [${JSON.stringify(roles.map(r => `${r.name} | ${r.id}`))}]\n - Expected Role Start: ${currentRankRole}`);
-					}
-
-					console.log(`╰┈➤ [${this.name}][${message.id}]: Role Status: ${hasRole} (${rankEmoji})`);
-					if (!rankField.rawName.startsWith("✅") && !rankField.rawName.startsWith("⚠️")) {
-						rankField.rawName = `${rankEmoji} ${rankField.rawName}`;
-						isUpdated = true;
-					}
-				} else {
-					rankEmoji = "❌";
-					console.log(`╰┈➤ [${this.name}][${message.id}]: Rank Status: IsNotMatched - "${rankField.rawValue}" (${rankEmoji})`);
-				}
+			if (!rankField.rawName.includes(rankEmoji)) {
+				rankField.rawName = `${rankEmoji} ${EmbedFieldName.rank}`;
+				isUpdated = true;
 			}
+		}
 
+		{ // Report
 			const isReportApproved = await this.checkReportLink(member, reportField);
 			const reportEmoji = isReportApproved === null ? "⚠️" : (isReportApproved ? "✅" : "❌");
 
 			console.log(`╰┈➤ [${this.name}][${message.id}]: Report Status: ${reportEmoji} (${isReportApproved})`);
-			if (!reportField.rawName.startsWith("✅") && !reportField.rawName.startsWith("❌") && !reportField.rawName.startsWith("⚠️")) {
-				reportField.rawName = `${reportEmoji} ${reportField.rawName}`;
-				isUpdated = true;
-			}
-		} else {
-			if (!senderField.rawName.startsWith("❌")) {
-				senderField.rawName = `❌ ${senderField.rawName}`;
+			if (!reportField.rawName.includes(reportEmoji)) {
+				reportField.rawName = `${reportEmoji} ${EmbedFieldName.report}`;
 				isUpdated = true;
 			}
 		}
