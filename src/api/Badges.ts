@@ -17,7 +17,7 @@
 */
 
 import ErrorBoundary from "@components/ErrorBoundary";
-import BadgeAPIPlugin from "plugins/_api/badges";
+import BadgeAPIPlugin from "@plugins/_api/badges";
 import { ComponentType, HTMLProps } from "react";
 
 export const enum BadgePosition {
@@ -47,7 +47,8 @@ export interface ProfileBadge {
     key?: string;
 
     /**
-     * Allows dynamically returning multiple badges
+     * Allows dynamically returning multiple badges.
+     * Must not call hooks
      */
     getBadges?(userInfo: BadgeUserArgs): ProfileBadge[];
 }
