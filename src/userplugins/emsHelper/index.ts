@@ -73,7 +73,7 @@ export default definePlugin({
 	},
 
 	async checkChannelMessages(onlyNewMessage: boolean = false): Promise<void> {
-		const channel = ChannelStore.getChannel(root.TARGET_CHANNEL_ID);
+		const channel = ChannelStore.getChannel(root.TARGET_CHANNEL_ID); // test
 		if (!channel || channel.guild_id !== root.TARGET_GUILD_ID) return;
 
 		const messages = MessageStore.getMessages(root.TARGET_CHANNEL_ID);
