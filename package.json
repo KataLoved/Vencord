@@ -25,7 +25,7 @@
         "watchWeb": "pnpm buildWeb --watch",
         "generatePluginJson": "tsx scripts/generatePluginList.ts",
         "generateTypes": "tspc --emitDeclarationOnly --declaration --outDir packages/vencord-types --allowJs false",
-        "inject": "prepare.bat && node scripts/runInstaller.mjs -- --install",
+        "inject": "prepare.bat && node scripts/runInstaller.mjs -- --install -branch stable",
         "uninject": "node scripts/runInstaller.mjs -- --uninstall",
         "lint": "eslint",
         "lint-styles": "stylelint \"src/**/*.css\" --ignore-pattern src/userplugins",
