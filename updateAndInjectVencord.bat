@@ -1,4 +1,11 @@
 @echo off
+net session >nul 2>&1
+if %errorlevel% neq 0 (
+    echo Requesting administrator privileges...
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Process -FilePath '%~f0' -WorkingDirectory '%CD%' -ArgumentList '%*' -Verb RunAs"
+    exit /b
+)
+
 setlocal
 
 REM Run from repository root (directory of this script)

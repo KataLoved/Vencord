@@ -21,4 +21,5 @@ lerna-debug.log*
 
 ExtensionCache/
 /settings
+pushForkUpdate.bat
 syncForkFromUpstream.bat
