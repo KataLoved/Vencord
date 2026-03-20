@@ -17,6 +17,7 @@ if errorlevel 1 (
 
 echo.
 echo [2/3] Running pnpm build...
+call pnpm i
 call pnpm build
 if errorlevel 1 (
     echo.
