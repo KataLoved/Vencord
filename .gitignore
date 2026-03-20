@@ -10,6 +10,7 @@ vencord_installer
 yarn.lock
 bun.lock
 package-lock.json
+pnpm-lock.yaml
 
 *.log
 npm-debug.log*
