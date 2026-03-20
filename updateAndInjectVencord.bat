@@ -6,7 +6,8 @@ REM Run from repository root (directory of this script)
 pushd "%~dp0"
 
 echo [1/3] Updating repository from git...
-git pull --ff-only
+git reset --hard HEAD
+git pull --ff-only origin main
 if errorlevel 1 (
     echo.
     echo Git update failed. Resolve git issues and try again.
