@@ -73,33 +73,6 @@ export const TranslateChatBarIcon: ChatBarButtonFactory = ({ isMainChat }) => {
 		//     });
 	};
 
-<<<<<<< HEAD
-	const button = (
-		<ChatBarButton
-			tooltip="Open Translate Modal"
-			onClick={e => {
-				if (e.shiftKey) return toggle();
-
-				openModal(props => (
-					<TranslateModal rootProps={props} />
-				));
-			}}
-			onContextMenu={toggle}
-			buttonProps={{
-				"aria-haspopup": "dialog"
-			}}
-		>
-			<TranslateIcon className={cl({ "auto-translate": autoTranslate, "chat-button": true })} />
-		</ChatBarButton>
-	);
-
-	if (shouldShowTranslateEnabledTooltip && settings.store.showAutoTranslateTooltip)
-		return (
-			<Tooltip text="Auto Translate Enabled" forceOpen>
-				{() => button}
-			</Tooltip>
-		);
-=======
     const button = (
         <ChatBarButton
             tooltip="Open Translate Modal"
@@ -122,7 +95,6 @@ export const TranslateChatBarIcon: ChatBarButtonFactory = ({ isMainChat }) => {
                 {button}
             </TooltipContainer>
         );
->>>>>>> upstream/main
 
 	return button;
 };
