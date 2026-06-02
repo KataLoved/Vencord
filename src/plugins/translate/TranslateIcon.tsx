@@ -73,35 +73,12 @@ export const TranslateChatBarIcon: ChatBarButtonFactory = ({ isMainChat }) => {
 
     if (!isMainChat) return null;
 
-<<<<<<< HEAD
-	const toggle = () => {
-		const newState = !autoTranslate;
-		settings.store.autoTranslate = newState;
-		// if (newState && settings.store.showAutoTranslateAlert !== false)
-		//     Alerts.show({
-		//         title: "Vencord Auto-Translate Enabled",
-		//         body: <>
-		//             <Forms.FormText>
-		//                 You just enabled Auto Translate! Any message <b>will automatically be translated</b> before being sent.
-		//             </Forms.FormText>
-		//         </>,
-		//         confirmText: "Disable Auto-Translate",
-		//         cancelText: "Got it",
-		//         secondaryConfirmText: "Don't show again",
-		//         onConfirmSecondary: () => settings.store.showAutoTranslateAlert = false,
-		//         onConfirm: () => settings.store.autoTranslate = false,
-		//         // troll
-		//         confirmColor: "vc-notification-log-danger-btn",
-		//     });
-	};
-=======
     const toggle = () => {
         const newState = !autoTranslate;
         settings.store.autoTranslate = newState;
         if (newState && !settings.store.dismissedAutoTranslateAlert)
             openModal(props => <AutoTranslateConfirmModal {...props} />);
     };
->>>>>>> upstream/main
 
     const button = (
         <ChatBarButton
